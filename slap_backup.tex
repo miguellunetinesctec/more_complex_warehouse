@@ -1,0 +1,385 @@
+%\documentclass{article}
+%% Extended Abstract template for Tristan 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[a4paper,twoside,11pt]{article}
+
+%% Language %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry} 
+\usepackage[USenglish]{babel} % francais, polish, spanish, ...
+\usepackage[T1]{fontenc}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{amssymb}
+\usepackage{comment}
+\usepackage{glossaries}
+\usepackage[authoryear]{natbib}  % << this gives you (Author, Year) style
+\bibliographystyle{apalike}     % or apalike, abbrvnat, agsm, etc.
+
+
+
+
+
+\newacronym{gap}{GAP}{Generalized Assignment Problem}
+\newacronym{dos}{DOS}{Duration of Stay}
+\newacronym{slap}{SLAP}{Storage Location Assignment Problem}
+\newacronym{rl}{RL}{Reinforcement Learning}
+\newacronym{mdp}{MDP}{Markov Decision Process}
+\newacronym{lp}{LP}{Linear Programming}
+
+
+\title{Dynamic Storage Location Assignment Problem}
+\author{Miguel Lunet}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+
+\section{Introduction}
+
+
+
+``This project is particularly suited for sequential decision-making due to the dynamic and regulatory-intensive nature of the operations. Our partner operates a large warehouse storing flammable products, which must comply with stringent regulations regarding storage proximity and safety measures. Additionally, the warehouse must efficiently manage the constant flow of trucks transporting these products, requiring real-time, adaptive decision-making.''
+
+\section{Related work}
+
+Warehouse operation planning and control considerably impact the performance of distribution centers (DCs) and the entire supply network \citep{renaud2008improving}.  Successful warehouse layouts must, accomplish the following objectives, regardless of the material being stored \citep{larson1997heuristic}: (1) maximize the use of space; (2) maximize the use of equipment; (3) maximize the use of labor; (4) maximize accessibility to all items; (5) maximize protection of all items.(should be from Tompkins handbook of inventory management). The \gls{slap} was firstly introduced by \cite{hausman1976optimal}, who proposed a rule-based system to optimize the product layout in an automated crane-based warehouse.
+
+\cite{martello1992generalized} present an overview of exact and approximate methods to solve the \gls{gap}. \cite{gu2007research} and \cite{reyes2019storage} review the literature on the abovementioned problem.
+
+A storage assignment policy is a set of rules determining where the unit loads of different products will be located in a warehouse. Dedicated storage policies require that a particular storage location be reserved for units of a single product during the entire planning horizon. Shared storage policies allow the successive storage of units of different products in the same location \citep{goetschalckx1990shared}. We should expect shared policies to generally take less space than dedicated policies. Warehouse management still largely relies on human involvement, often resulting in improvised solutions based on accumulated experience. In this context, artificial intelligence — especially \gls{rl} — offers significant potential to enhance warehouse operations by developing flexible and responsive strategies to internal changes \citep{cestero2022storehouse}. One of the strengths of \gls{rl} for this problem could be handling a dynamic environment, given enough variation during its training process. The variation may include changes in product popularity given seasonality, for example.
+
+\cite{moccia2009column} study the operational management of container transshipment terminals. Areas closer to arrival and departure gates are often used for temporary storage to accelerate loading and unloading operations. In this case, the loading and unloading areas usually do not match, with a high preponderance given to the reallocation process. They use a branch-and-bound algorithm for small instances and column generation for larger settings.
+
+\cite{park2010comparing} explores four possible solution representations related to the chromosome designed for the genetic algorithm used to solve the problem.
+
+\cite{li2016dynamic} perform the storage location  assignment with respect to mutual affinity and ABC classification of SKUs, that is, SKUs with high/low affinity are assigned close to/far away from each other. The assignment is also performed concerning the relative importance of SKUs (e.g., frequency of ordering).
+
+\cite{muppani2008branch} uses a branch and bound algorithm to develop class-based storage policy although dedicated and random. It proved to be much more eﬃcient than a baseline dynamic programming algorithm and can be applied to handle large real life problems  eﬃciently.
+
+\cite{waubert2022dynamic} trains a \gls{rl} agent is in simulated re-runs to dynamically assign storage locations with the data of the first twelve months and then evaluated in simulations with data of the last two months (offline training process). A storage location assignment is required whenever a pallet is in the front of the warehouse (entry) and not empty. The actions the agent may take mirror the timing and possible choices of the decision-making process that is currently conducted by human workers in the warehouse: the agent may assign a pallet to zone A, B, or C. Hence, the action space of the DRL agent is discrete and of size three. The simulation automatically interprets the action and executes the process: changing the location status of the zone and adding the transport cost to the total cost. The agent may not choose that zone in the hypothetical situation in which a zone is full. One of the benchmark policies is a PFA policy that, given the \gls{dos} defines whether to assign to a, b, OR c. Below q1 is A, between q1 and q2 is B, and above q2 is C.
+
+%\cite{vries2024exploring} 
+%Not great results, but the entire thesis is related to this topic
+\cite{troch2023solving} trains the agent in an environment that consists of 160 locations and 160 products. Consequently, the transition model will always swap two items. 
+
+\cite{niu2019model} explores the application of \gls{rl} for a simplified version of \gls{slap}. It uses the exact tabular method as an upper-bound benchmark for small settings.
+
+\cite{wu2024deep} Uses reinforcmeent learning to coordinate the pikcing actions of a set of robots in a mulitagent system.
+
+
+WORTHY
+\cite{moccia2009column}
+\cite{li2016dynamic}
+\cite{niu2019model}(tem github)
+
+%Using LLMs for explanability
+
+%\cite{li2023large} This is Great example of how to use LLMs to improve the explainability of optimization models.
+
+%\cite{izquierdo2024plancollabnl} collaborator
+
+
+\newpage
+
+\section{\gls{lp} model}
+
+Based in \cite{moccia2009column}
+
+% Definição das variáveis
+\newcommand{\Task}{k}
+\newcommand{\TaskB}{u}
+\newcommand{\TaskSet}{K}
+\newcommand{\Product}{p}
+\newcommand{\ProductSet}{P}
+\newcommand{\Location}{m}
+\newcommand{\LocationB}{l}
+\newcommand{\LocationSet}{M}
+\newcommand{\IncompatibleSet}{U}
+\newcommand{\Period}{t}
+\newcommand{\PeriodSet}{T}
+
+\newcommand{\BinaryTaskProduct}{f}
+\newcommand{\x}{x}
+\newcommand{\y}{y}
+\newcommand{\In}{o}
+\newcommand{\Out}{d}
+\newcommand{\Arrival}{a}
+\newcommand{\Departure}{b}
+\newcommand{\TravelTime}{c}
+\newcommand{\Distance}{s}
+\newcommand{\TaskSize}{q}
+\newcommand{\LocationCapacity}{Q}
+\newcommand{\MinDistance}{\delta}
+\newcommand{\ShelvingTime}{s}
+\newcommand{\PickingTime}{p}
+\newcommand{\LimitReallocations}{L}
+
+
+\newcommand{\Assignment}{z}
+\newcommand{\Reallocation}{w}
+\newcommand{\UsedCapacity}{h}
+\newcommand{\Available}{A}
+
+
+\begin{table}[htpb]
+    \centering
+    \caption{Modeling Notation.}
+    \label{tab:notation}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Notation} & \textbf{Meaning} \\
+        \midrule
+        \multicolumn{2}{l}{Sets:} \\
+        $\Task \in \TaskSet$ & Set of tasks \\
+        %$\Product \in \ProductSet$ & Set of products \\
+        $\Location \in \LocationSet$ & Set of locations (includes the in and out of the warehouse and all possible storage locations)\\
+        $\Period \in \PeriodSet$ & Set of periods\\
+        $(\Task,\TaskB) \in \IncompatibleSet$ & Set of incompatible tasks\\
+        \midrule
+        \multicolumn{2}{l}{Parameters:} \\
+        $\Arrival_\Task$ & Arrival of task $\Task$ \\
+        $\Departure_\Task$ & Departure of task $\Task$ \\
+        $\In_\Task$ & Origin of task $\Task$ \\
+        $\Out_\Task$ & Destination of task $\Task$ \\
+        $\TaskSize_\Task$ & Size of task $\Task$ \\
+        $\LocationCapacity_\Location$ & Capacity of location $\Location$ \\
+        $\Distance_{\Location,\LocationB}$ & Distance between locations $\Location$ and $\LocationB$ \\
+        $\TravelTime_{\Location,\LocationB}$ & Travel time between storage locations $\Location$ and $\LocationB$ \\
+        $\TravelTime_{\In_\Task,\Location}$ & Travel time between the origin of task $\Task$ and storage location $\Location$\\
+        $\TravelTime_{\Location,\Out_\Task}$ & Travel time between storage location $\Location$ and the departure location of task $\Task$ \\
+        $\MinDistance$ & Minimum distance between two incompatible products \\
+        $\LimitReallocations$ & Maximum number of reallocations per time period \\
+        \midrule
+        \multicolumn{2}{l}{Decision variables:} \\
+        $\Assignment^\Task_{\Location,\Period}$ & Binary variable indicating if task $\Task$ is assigned to location $\Location$ in period $\Period$\\
+        $\Reallocation^\Task_{\Location,\LocationB, \Period}$ & Binary variable indicating if task $\Task$ is reallocated from location $\Location$ to $\LocationB$ from period $\Period-1$ to $\Period$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Additionally, we define the following sets to facilitate the modeling:
+\begin{align*}
+\PeriodSet(\Task) &= \{\Period \in \PeriodSet : \Arrival_\Task \leq \Period \leq \Departure_\Task\}, \quad \forall \Task \in \TaskSet \\
+\PeriodSet^{-}(\Task) &= \{\Period \in \PeriodSet : \Arrival_\Task \leq \Period \leq \Departure_\Task - 1\}, \quad \forall \Task \in \TaskSet
+\end{align*}
+
+        
+
+\begin{align}
+&\min \sum_{\Task \in \TaskSet} \left\{ \sum_{\Location \in \LocationSet}(\Assignment^\Task_{\Location,\Arrival_\Task}\cdot \TravelTime_{\Location,\LocationB} + \Assignment^\Task_{\Location,\Departure_\Task}\cdot\TravelTime_{\Location,\LocationB}) + \sum_{\Location \in \LocationSet}\sum_{\LocationB \in \LocationSet}\sum_{\Period \in \PeriodSet^{-}(\Task)} \Reallocation^\Task_{\Location,\LocationB\Period}\cdot \TravelTime_{\Location,\LocationB}\right\}\\
+&\sum_{\Location\in\LocationSet}\Assignment^\Task_{\Location,\Period}=1,\quad \forall\Task \in \TaskSet,\Period \in \PeriodSet(\Task)\\
+&\sum_{\Task \in \TaskSet}\Assignment^\Task_{\Location,\Period}\cdot \TaskSize_\Task \leq \LocationCapacity_\Location,\quad \forall\Location \in \LocationSet,\Period\in\PeriodSet\\
+&\Assignment^\Task_{\Location,\Period} + \Assignment^\Task_{\LocationB,\Period+1} - \Reallocation^\Task_{\Location,\LocationB,\Period} \leq 1 ,\quad \forall \Task\in\TaskSet,\Location \in \LocationSet,\LocationB\in\LocationSet,\Period\in\PeriodSet^{-}(\Task)\\
+&\MinDistance\cdot(\Assignment^\Task_{\Location,\Period}+\Assignment^\Task_{\LocationB,\Period}-1) \leq \Distance_{\Location,\LocationB},\quad \Task\in\TaskSet,\Location \in \LocationSet,\LocationB\in\LocationSet,\Period\in\PeriodSet \\
+&\sum_{\Task \in \TaskSet} \sum_{\Location \in \LocationSet} \sum_{\LocationB \in \LocationSet} \Reallocation^\Task_{\Location,\LocationB,\Period} \leq \LimitReallocations,\quad \forall \Period \in \PeriodSet  \\
+&\Assignment^\Task_{\Location,\Period} \in \{0,1\}, \quad \forall \Task \in \TaskSet, \Location \in \LocationSet, \Period \in \PeriodSet \\
+&\Reallocation^\Task_{\Location,\LocationB,\Period} \in \{0,1\}, \quad \forall \Task \in \TaskSet, \Location \in \LocationSet, \LocationB \in \LocationSet, \Period \in \PeriodSet
+\end{align}
+
+The objective function minimizes the total handling cost, which comprises the time required to store each task upon arrival, the time to retrieve it at its departure, and the time incurred due to reallocations between these moments. Constraints (2) guarantee that each task is assigned to exactly one location at every period between its arrival and departure. Constraints (3) ensure that the capacity limits of each storage location are not exceeded at any time. Constraints (4) define the reallocation decision variables by linking them to the assignment variables associated with each location and period. Constraints (5) enforce that incompatible task pairs are separated by at least $\MinDistance$ meters. Finally, constraints (6) and (7) specify the domain of the decision variables.
+
+
+\section{Simplified}
+
+\begin{table}[htpb]
+    \centering
+    \caption{Modeling Notation.}
+    \label{tab:notation}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Notation} & \textbf{Meaning} \\
+        \midrule
+        \multicolumn{2}{l}{Sets:} \\
+        $\Task \in \TaskSet$ & Set of tasks \\
+        $\Product \in \ProductSet$ & Set of products \\
+        $\Location \in \LocationSet$ & Set of locations (includes the in and out of the warehouse and all possible storage locations)\\
+        $\Period \in \PeriodSet$ & Set of periods\\
+        $(\Task,\TaskB) \in \IncompatibleSet$ & Set of incompatible tasks\\
+        \midrule
+        \multicolumn{2}{l}{Parameters:} \\
+        $\BinaryTaskProduct^\Task_\Product$ & Binary value indicating if task $\Task$ is of product type $\Product$ \\
+        $\Arrival_\Task$ & Arrival of task $\Task$ \\
+        $\Departure_\Task$ & Departure of task $\Task$ \\
+        $\In_\Task$ & Origin of task $\Task$ \\
+        $\Out_\Task$ & Destination of task $\Task$ \\
+        $\TaskSize_\Task$ & Size of task $\Task$ \\
+        $\LocationCapacity_\Location$ & Capacity of location $\Location$ \\
+        $\Distance_{\Location,\LocationB}$ & Distance between locations $\Location$ and $\LocationB$ \\
+        $\TravelTime_{\Location,\LocationB}$ & Travel time between storage locations $\Location$ and $\LocationB$ \\
+        $\TravelTime_{\Location,\Out_\Task}$ & Travel time between storage location $\Location$ and the departure location of task $\Task$ \\
+        $\MinDistance$ & Minimum distance between two incompatible products \\
+        \midrule
+        \multicolumn{2}{l}{Decision variables:} \\
+        $\Assignment^\Task_{\Location,\Period}$ & Binary variable indicating if task $\Task$ is assigned to location $\Location$ in period $\Period$\\
+        $\Available^\Task_\Location$ & Binary variable indicating if location $\Location$ can be used to store task $\Task$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Additionally, we define the following sets to facilitate the modeling:
+\begin{align*}
+\PeriodSet(\Task) &= \{\Period \in \PeriodSet : \Arrival_\Task \leq \Period \leq \Departure_\Task\}, \quad \forall \Task \in \TaskSet
+\end{align*}
+
+        
+\setcounter{equation}{0}
+\begin{align}
+&\min \sum_{\Task \in \TaskSet} \sum_{\Location \in \LocationSet}\Assignment^\Task_\Location \cdot (\TravelTime_{\In_\Task,\Location} + \TravelTime_{\Location,\Out_\Task})\\
+&\sum_{\Location\in\LocationSet}\Assignment^\Task_{\Location}=1,\quad \forall\Task \in \TaskSet\\
+& \TaskSize^\Task - \LocationCapacity_\Location \leq M \cdot (1 - \Available^\Task_\Location)\\
+&\MinDistance\cdot(\Assignment^\Task_{\Location}+\Assignment^\Task_{\LocationB}-1) \leq \Distance_{\Location,\LocationB},\quad \Task\in\TaskSet,\Location \in \LocationSet,\LocationB\in\LocationSet,\Period\in\PeriodSet \\
+&\MinDistance\cdot(\Assignment^\Task_{\Location}+\Assignment^\Task_{\LocationB}-1) \leq \Distance_{\Location,\LocationB},\quad \Task\in\TaskSet,\Location \in \LocationSet,\LocationB\in\LocationSet,\Period\in\PeriodSet \\
+&\Assignment^\Task_{\Location} \in \{0,1\}, \quad \forall \Task \in \TaskSet, \Location \in \LocationSet \\
+&\UsedCapacity_{\Location,\Period} \geq 0, \quad \forall \Location \in \LocationSet, \Period \in \PeriodSet
+\end{align}
+
+The objective function minimizes the total handling cost, which comprises the time required to store each task upon arrival and the time to retrieve it at its departure. Constraints (2) guarantee that each task is assigned to exactly one location at every period between its arrival and departure. Constraints (3) define the used capacity decision variable and constraints (4) ensure that the capacity limits of each storage location are not exceeded at any time. Constraints (5) enforce that incompatible task pairs are separated by at least $\MinDistance$ meters. Finally, constraints (6) and (7) specify the domain of the decision variables.
+
+\section{\gls{mdp} formulation}
+
+
+We model this problem using the universal sequential decision-making framework proposed by \cite{Powell2022ReinforcementLA}, which has strong parallelism with the \gls{mdp} formulation.
+
+\subsubsection*{State Space}
+
+The system's state encompasses all the information required to guide decision-making. We divide this state into three components: \textbf{physical state}, \textbf{information state}, and \textbf{belief state}.
+
+\begin{itemize}
+    \item The \textbf{physical state} represents the current warehouse occupation. This can range from an aggregated view - such as occupation rates in different sections - to a highly detailed, granular representation that specifies the exact location of each product.
+
+    \item The \textbf{information state} includes details about the new product that needs to be stored, such as its size, expected storage time, affinity with other products, and safety considerations.
+
+    \item The \textbf{belief state} captures uncertain or probabilistic information, such as the expected departure times of products and their popularity. This may reflect patterns like seasonality and demand trends.
+\end{itemize}
+
+The \textbf{initial state} also includes deterministic parameters that remain constant throughout the simulation, such as the warehouse’s dimensions and rack positions.
+
+
+\subsubsection*{Action Space}
+
+Actions can be of different types. One type is assigning the newly arrived product to a storage location, while another involves repositioning a product that is already stored.
+
+In this problem, the set of available actions at any given time is state-dependent, for three main reasons:
+\begin{enumerate}
+    \item A product can only be stored in racks that are large enough to accommodate it.
+    \item There may be hard constraints preventing certain products from being stored near each other for safety reasons (to be discussed).
+    \item A rack may already be full and thus unavailable for additional storage.
+\end{enumerate}
+
+To handle this state-dependent action space, two approaches are possible: (i) using the reward signal to penalize invalid actions (e.g., with a strong negative reward), or (ii) applying action masking methods to prevent the selection of invalid actions altogether (e.g., Maskable PPO from \texttt{stable-baselines3}).
+
+Actions can also differ in their granularity. For instance, one may first select a section of the warehouse (a high-level decision) and then apply a rule-based method to determine the exact location within that section. Alternatively, a more fine-grained approach may directly specify the exact storage location for the product.
+
+The action trigger can vary depending on the problem setup. It may be invoked when a new product arrives or, alternatively, when a stockout occurs \citep{vries2024exploring}.
+
+
+
+%(tese de mestrado)
+
+\subsubsection*{Exogenous Information}
+
+Exogenous information comes in two forms. First, during state transitions, the system reveals the specifications of the next product to be stored. Second, the outbound flow of products from the warehouse is influenced by stochastic demand patterns and the unpredictability of supplier arrivals. These elements introduce uncertainty that is external to the decision-making process but significantly affects the system dynamics.
+
+
+\subsubsection*{State Transition}
+
+The state transition function updates the state space in several ways:
+
+\begin{itemize}
+    \item The \textbf{physical state} is updated based on changes in product locations within the warehouse.
+    \item The \textbf{information state} is updated as the specifications of a new product are disclosed.
+    \item The \textbf{belief state} evolves through the analysis of demand patterns and seasonality factors, reflecting updated forecasts and uncertainties.
+\end{itemize}
+
+\subsubsection*{Reward}
+
+The reward function can take multiple forms, depending on the specific objectives of the system. It may incorporate:
+
+\begin{itemize}
+    \item \textbf{Storage costs}, associated with placing products in specific locations.
+    \item \textbf{Repositioning costs}, incurred when moving products within the warehouse.
+    \item \textbf{Penalties for safety violations}, such as placing incompatible products too close to one another.
+    \item \textbf{Travel distance}, representing the effort or time required by the operator (picker) to retrieve products.
+\end{itemize}
+
+These components can be combined and weighted according to the priorities of the warehouse management strategy.
+
+
+\section{Possible Benchmark Policies}
+
+We consider several benchmark policies to evaluate the performance of learning-based approaches:
+
+\begin{itemize}
+    \item \textbf{Random:} The simplest baseline samples actions (e.g., assigning to zone A, B, or C) uniformly at random.
+
+    \item \textbf{Just-in-Order:} This heuristic prioritizes cheaper storage zones. Pallets are assigned to zone A until it reaches full capacity, then to zone B, and finally to zone C.
+
+    \item \textbf{ABC Classification:} This policy reflects the current system in use at the warehouse. Product classes are assigned by human experts based on historical patterns and operational experience.
+
+    \item \textbf{DoS-Quantiles:} An engineered policy based on historical data and used as a strong retrospective baseline. It relies on the \textit{Duration of Stay} (DoS) of product types. Two quantiles, $q_1$ and $q_2$, of the DoS distribution are defined:
+    \begin{itemize}
+        \item If the average DoS of a product type is less than or equal to $q_1$, it is assigned to zone A.
+        \item If it lies between $q_1$ and $q_2$, it is assigned to zone B.
+        \item Otherwise, it is assigned to zone C.
+    \end{itemize}
+    These quantile values can be tuned via grid search.
+    
+    \item \textbf{Tabular Solution (for small settings):} In small-scale environments, an exact tabular solution can be computed and used as an optimal benchmark.
+
+    \item \textbf{Do Nothing (for repositioning cases):} This baseline performs no repositioning at all, serving as a lower bound for performance in repositioning scenarios.
+
+    \item \textbf{Reinforcement Learning Methods:} Different RL algorithms (e.g., PPO, DQN, Maskable PPO) can be compared to assess their effectiveness under various settings.
+\end{itemize}
+
+POSSIBLE ABSTRACT
+
+Rules for the assignbment of products to a warehouse position are usually random or..
+
+This problem is sequential, in the way that new products keep on arriving and .
+
+We explore the potential of 
+
+Future work will include more constraints form our online retail partner, namely .
+So far we considered a small discrete action space, deifning the aming three regions for the product allocation. This action space can become more granular. In the limit, it can be continuous and 
+
+
+A storage assignment policy is a set of rules determining where the unit loads of different
+products will be located in a warehouse. (Goetschalckx and Ratliff, 1990) Randomzied and dedicated stprage policies are the most used in practice. The first cosnsits of randomly storing the arried products in the warehouse, and the second require that a particular storage location be reserved for units of a single product during the entire planning horizon. On the other hand, shared storage policies allow the successive storage of units of different products in the same location When used correctly, they allow to consume less space.
+The goal may be of different types.
+
+\section{Results}
+
+\begin{comment}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Figures/provided_data.png}
+    \caption{Provided data.}
+    \label{fig:provided_data}
+\end{figure}
+
+
+``Forecast is provided and warehouse state is partially provided''. What does ``partially provided'' mean in this context?
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Figures/interface_model.png}
+    \caption{Interface model.}
+    \label{fig:rl_framework}
+\end{figure}
+
+\end{comment}
+
+\newpage
+
+\bibliography{references}
+
+
+\end{document}
